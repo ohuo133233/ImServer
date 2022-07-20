@@ -1,6 +1,5 @@
 package com.example.im.client;
 
-import com.example.im.bean.CharType;
 import com.example.im.bean.ChatData;
 import com.google.gson.Gson;
 import io.netty.bootstrap.Bootstrap;
@@ -37,15 +36,15 @@ public class NettyClient {
         bootstrap.remoteAddress(host, port);
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
-            protected void initChannel(SocketChannel socketChannel) throws Exception {
+            protected void initChannel(SocketChannel socketChannel) {
                 socketChannel.pipeline().addLast(new IdleStateHandler(20, 10, 0));
                 socketChannel.pipeline().addLast(new ObjectEncoder());
                 socketChannel.pipeline().addLast(new ObjectDecoder(ClassResolvers.cacheDisabled(null)));
                 socketChannel.pipeline().addLast(new NettyClientHandler());
             }
         });
-        ChannelFuture future = bootstrap.connect(host, port);
 
+        ChannelFuture future = bootstrap.connect(host, port);
         try {
             future.sync();
         } catch (InterruptedException e) {
@@ -61,5 +60,8 @@ public class NettyClient {
     public void sendWordMessage(ChatData chatData) {
         socketChannel.writeAndFlush(mGson.toJson(chatData));
     }
+
+
+
 
 }

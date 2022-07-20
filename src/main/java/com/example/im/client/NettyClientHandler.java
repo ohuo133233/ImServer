@@ -36,7 +36,13 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<Object> {
      */
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object obj) {
-        System.out.println(">>>>>>>>>>>>>客户端接收到消息：{}" + obj);
+        System.out.println("客户端接收到消息: " + obj);
         ReferenceCountUtil.release(obj);
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        System.out.println("channelActive" + ctx.name());
     }
 }

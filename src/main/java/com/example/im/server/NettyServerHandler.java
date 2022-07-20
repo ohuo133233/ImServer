@@ -3,6 +3,7 @@ package com.example.im.server;
 import com.example.im.bean.ChatData;
 import com.google.gson.Gson;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelId;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 
@@ -14,7 +15,7 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
     // 世界消息
     private LinkedList<ChatData> mWordMessageList = new LinkedList<>();
 
-    private HashMap mUserMap = new HashMap();
+    private HashMap<ChannelId, Long> mUserMap = new HashMap();
     private Gson mGson = new Gson();
 
     @Override
@@ -86,7 +87,9 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     private void privateMessage(ChatData chatData, SocketChannel socketChannel) {
-        socketChannel.parent().remoteAddress();
+//        socketChannel.parent().
+//       socketChannel.parent().writeAndFlush(mGson.toJson(chatData),)
+
     }
 
     private void channelMessage(ChatData chatData) {
@@ -97,4 +100,29 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
         System.out.println("mWordMessageList: " + mWordMessageList);
         System.out.println("mWordMessageList size: " + mWordMessageList.size());
     }
+
+
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        super.channelRegistered(ctx);
+        System.out.println(ctx.channel().id() + "上线了");
+        System.out.println(ctx.name() + "上线了");
+        addUser(ctx.channel().id(), 1);
+    }
+
+    @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        super.channelUnregistered(ctx);
+        System.out.println(ctx.channel().id() + "下线了");
+        removeUser(ctx.channel().id());
+    }
+
+    private void addUser(ChannelId id, long roleId) {
+        mUserMap.put(id, roleId);
+    }
+
+    public void removeUser(ChannelId id) {
+        mUserMap.remove(id);
+    }
+
 }
