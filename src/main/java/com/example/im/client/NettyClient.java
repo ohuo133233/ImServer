@@ -27,7 +27,7 @@ public class NettyClient {
     public SocketChannel socketChannel;
     private Gson mGson = new Gson();
 
-    public NettyClient(int roleId,String name, int port, String host) {
+    public NettyClient(long roleId,String name, int port, String host) {
         this.port = port;
         this.host = host;
         this.mRoleId = roleId;

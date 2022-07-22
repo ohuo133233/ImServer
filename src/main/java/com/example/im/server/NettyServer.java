@@ -20,8 +20,6 @@ import java.util.concurrent.TimeUnit;
 public class NettyServer {
 
     private int port;
-    private SocketChannel socketChannel;
-
 
     public NettyServer(int port) {
         this.port = port;

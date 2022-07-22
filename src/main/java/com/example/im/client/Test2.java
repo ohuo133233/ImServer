@@ -38,7 +38,7 @@ public class Test2 {
     public static void sendChannelMessage() {
         ChatData chatData = new ChatData();
         chatData.setId(1);
-        chatData.setCharType(CharType.CHANNEL);
+        chatData.setCharType(CharType.CHAT_ROOM);
         chatData.setName("客户端");
         chatData.setMessage("客户端发送消息");
 
