@@ -5,7 +5,7 @@ import com.example.im.bean.ChatData;
 
 import java.util.Scanner;
 
-public class Test {
+public class Test2 {
     private static NettyClient mNettyClient;
 
     public static void main(String[] args) {
@@ -14,7 +14,7 @@ public class Test {
     }
 
     public static void initNettyClient() {
-        mNettyClient = new NettyClient(1, "测试", 8080, "127.0.0.1");
+        mNettyClient = new NettyClient(2, "测试2", 8080, "127.0.0.1");
         mNettyClient.start();
 
         println("请输入指令\n 1.私聊\n 2.群聊\n 3.频道聊天\n");
@@ -23,7 +23,7 @@ public class Test {
 
         switch (next) {
             case "1":
-                sendPrivateMessage(1, 2, "测试1", "hello 测试2");
+                sendPrivateMessage(2, 2, "测试2", "hello 测试1");
                 break;
             case "3":
                 sendChannelMessage();

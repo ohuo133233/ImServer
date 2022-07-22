@@ -22,7 +22,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<Object> {
                     pingDto.setCharType(CharType.HEART_BEAT);
                     pingDto.setMessage("我是心跳包");
 //                    ctx.writeAndFlush(pingDto.toString());
-                    System.out.println("send ping to server----------");
+//                    System.out.println("send ping to server----------");
                     break;
                 default:
                     break;

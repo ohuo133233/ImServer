@@ -9,7 +9,7 @@ public class ImApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(ImApplication.class, args);
-        NettyServer nettyServer = new NettyServer(8083);
+        NettyServer nettyServer = new NettyServer(8080);
         try {
             nettyServer.start();
         } catch (InterruptedException e) {

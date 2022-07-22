@@ -2,27 +2,30 @@ package com.example.im.server;
 
 import com.example.im.bean.ChatData;
 import com.google.gson.Gson;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.socket.SocketChannel;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
-    // 世界消息
-    private LinkedList<ChatData> mWordMessageList = new LinkedList<>();
 
-    private HashMap<ChannelId, Long> mUserMap = new HashMap();
+    private HashMap<Long, ArrayList<ChannelId>> mChannelMap = new HashMap();
+
+    private static Map<Long, Channel> mUserMap = new ConcurrentHashMap();
+    private static Map<Long, Channel> mGroupMap = new ConcurrentHashMap<>();
     private Gson mGson = new Gson();
 
+
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        System.out.println("channelInactive ：channel id" + ctx.channel().id());
-        // channel失效，从Map中移除
-        mUserMap.remove(ctx.channel().id());
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        super.channelRegistered(ctx);
+        println("ID: " + ctx.channel().id() + "Name: " + ctx.name() + " ,-----上线了");
     }
 
 
@@ -34,81 +37,64 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
      */
     @Override
     protected void channelRead0(ChannelHandlerContext context, Object obj) {
-        System.out.println("服务端接收到客户端的消息：" + obj);
+//        System.out.println("服务端接收到客户端的消息：" + obj);
 
         // 解析客户端发送的数据
         ChatData chatData = mGson.fromJson(obj.toString(), ChatData.class);
-        System.out.println("chatData：" + chatData.toString());
-
-        SocketChannel socketChannel = (SocketChannel) context.channel();
-//        socketChannel.writeAndFlush("服务端回复消息");
 
         switch (chatData.getCharType()) {
-            case CHANNEL:
-                channelMessage(chatData);
+            case ON_LINE:
+                onLine(chatData, context.channel());
                 break;
             case PRIVATE_MSG:
-                privateMessage(chatData, socketChannel);
+                privateMessage(chatData);
+                break;
+            case CHAT_ROOM:
+                chatRoomMessage(chatData);
+                break;
+            case GROUP:
+                groupMessage(chatData);
+                break;
+            default:
+                break;
         }
-
-
-//        ChatData chatData = gson.fromJson(obj.toString(), ChatData.class);
-//
-//        // 客户端ID
-//        long clientId = chatData.getId();
-//
-//        /**
-//         * 心跳包处理
-//         */
-//        ChatData pingDto = new ChatData();
-//        pingDto.setId(clientId);
-//        pingDto.setMessage("服务端收到心跳包，返回响应");
-//        socketChannel.writeAndFlush(gson.toJson(pingDto));
-
-//
-//        Channel channel = NettyChannelMap.get(clientId);
-//
-//        if (channel==null){
-//            /**
-//             * 存放所有连接客户端
-//             */
-//            NettyChannelMap.add(clientId, socketChannel);
-//            channel=socketChannel;
-//        }
-//
-//
-//        /**
-//         * 服务器返回客户端消息
-//         */
-//        ChatDto returnDto=new ChatDto();
-//        returnDto.setClientId(clientId).setMsg("我是服务端，收到你的消息了");
-//        channel.writeAndFlush(JSON.toJSONString(returnDto));
-//        ReferenceCountUtil.release(obj);
     }
 
-    private void privateMessage(ChatData chatData, SocketChannel socketChannel) {
-//        socketChannel.parent().
-//       socketChannel.parent().writeAndFlush(mGson.toJson(chatData),)
+    private void onLine(ChatData chatData, Channel channel) {
+        println("ID:" + chatData.getId() + " ---Name:" + chatData.getName() + "----上线");
+        addUser(chatData.getId(), channel);
+    }
+
+    /**
+     * 群聊
+     *
+     * @param chatData
+     */
+    private void groupMessage(ChatData chatData) {
 
     }
 
-    private void channelMessage(ChatData chatData) {
-        if (mWordMessageList.size() == 10) {
-            mWordMessageList.removeFirst();
-        }
-        mWordMessageList.add(chatData);
-        System.out.println("mWordMessageList: " + mWordMessageList);
-        System.out.println("mWordMessageList size: " + mWordMessageList.size());
+    /**
+     * 私聊
+     *
+     * @param chatData 聊天Data
+     */
+    private void privateMessage(ChatData chatData) {
+        println(chatData.toString());
+        Channel user = getUser(chatData.getToID());
+        println(mUserMap.toString());
+        user.writeAndFlush(mGson.toJson(chatData));
     }
 
+    /**
+     * 聊天室
+     *
+     * @param chatData
+     */
+    private void chatRoomMessage(ChatData chatData) {
 
-    @Override
-    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-        super.channelRegistered(ctx);
-        System.out.println(ctx.channel().id() + "上线了");
-        System.out.println(ctx.name() + "上线了");
-        addUser(ctx.channel().id(), 1);
     }
+
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
@@ -117,12 +103,58 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
         removeUser(ctx.channel().id());
     }
 
-    private void addUser(ChannelId id, long roleId) {
-        mUserMap.put(id, roleId);
+    private void addUser(long id, Channel channel) {
+        println("id: " + id);
+        println("channel: " + channel.remoteAddress());
+        mUserMap.put(id, channel);
+        println(mUserMap.toString());
+        println(mUserMap.size() + "");
+    }
+
+    private Channel getUser(long id) {
+        return mUserMap.get(id);
     }
 
     public void removeUser(ChannelId id) {
         mUserMap.remove(id);
+    }
+
+    /**
+     * 创建聊天室
+     * 判断聊天室是否存在
+     * 存在结束逻辑，什么也不做
+     * 不存在创建，并把创建人加入聊天室
+     *
+     * @param id        创建人的ID
+     * @param channelId 聊天室ID
+     */
+    public void createChatRoom(ChannelId id, long channelId) {
+        if (mChannelMap.containsKey(channelId)) {
+            System.out.println("频道已经存在");
+        } else {
+            addChatRoom(id, channelId);
+        }
+    }
+
+
+    /**
+     * 加入聊天室
+     */
+    public void addChatRoom(ChannelId id, long channelId) {
+        ArrayList<ChannelId> list = mChannelMap.get(channelId);
+        list.add(id);
+    }
+
+    /**
+     * 加入群组
+     */
+
+    public void addGroup(long groupId, Channel channel) {
+//        Channel channel1 = mGroupMap.get(groupId);
+    }
+
+    private static void println(String message) {
+        System.out.println(message);
     }
 
 }

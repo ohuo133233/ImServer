@@ -1,8 +1,10 @@
 package com.example.im.client;
 
+import com.example.im.bean.CharType;
 import com.example.im.bean.ChatData;
 import com.google.gson.Gson;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.BootstrapConfig;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -15,16 +17,21 @@ import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 
+import java.util.Map;
+
 public class NettyClient {
     private int port;
     private String host;
+    private long mRoleId;
+    private String mName;
     public SocketChannel socketChannel;
     private Gson mGson = new Gson();
 
-    public NettyClient(int port, String host) {
+    public NettyClient(int roleId,String name, int port, String host) {
         this.port = port;
         this.host = host;
-
+        this.mRoleId = roleId;
+        this.mName = name;
     }
 
     public void start() {
@@ -53,15 +60,19 @@ public class NettyClient {
 
         if (future.isSuccess()) {
             socketChannel = (SocketChannel) future.channel();
+            ChatData chatData = new ChatData();
+            chatData.setId(mRoleId);
+            chatData.setName(mName);
+            chatData.setMessage("上线消息");
+            chatData.setCharType(CharType.ON_LINE);
+            socketChannel.writeAndFlush(mGson.toJson(chatData));
             System.out.println("connect server  成功---------");
         }
     }
 
-    public void sendWordMessage(ChatData chatData) {
+    public void sendMessage(ChatData chatData) {
         socketChannel.writeAndFlush(mGson.toJson(chatData));
     }
-
-
 
 
 }

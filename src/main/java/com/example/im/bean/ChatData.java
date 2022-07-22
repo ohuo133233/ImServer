@@ -3,7 +3,7 @@ package com.example.im.bean;
 
 public class ChatData {
 
-    public long id;
+    private long id;
     private String name;
     private CharType charType;
 
