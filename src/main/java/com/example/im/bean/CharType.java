@@ -12,7 +12,9 @@ public enum CharType {
     // 上线
     ON_LINE,
     // 创建聊天室
-    CREATE_CHAT_ROOM
+    CREATE_CHAT_ROOM,
+    // 加入聊天室
+    JOIN_CHAT_ROOM
 
 
 }

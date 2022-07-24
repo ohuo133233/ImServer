@@ -8,35 +8,31 @@ import java.util.Scanner;
 public class Test {
     private static NettyClient mNettyClient;
     private static long mRoleId = 2;
-    private static String mName="测试1";
+    private static String mName = "测试1";
 
-    public static void main(String[] args) {
-        initNettyClient();
-//        sendWordMessage();
-    }
 
     public static void initNettyClient() {
-        mNettyClient = new NettyClient(mRoleId, mName, 8080, "127.0.0.1");
+        mNettyClient = new NettyClient(mRoleId, mName, 8082, "127.0.0.1");
         mNettyClient.start();
 
-        println("请输入指令\n 1.私聊\n 2.群聊\n 3.聊天室聊天\n 4.创建聊天室\n ");
-        Scanner scanner = new Scanner(System.in);
-        String next = scanner.next();
-
-        switch (next) {
-            case "1":
-                sendPrivateMessage(mRoleId, 2, "测试1", "hello 测试2");
-                break;
-            case "3":
-                sendChannelMessage();
-                break;
-            case "4":
-                sendCreateChatRoomMessage(1, mRoleId);
-                break;
-        }
+//        println("请输入指令\n 1.私聊\n 2.群聊\n 3.聊天室聊天\n 4.创建聊天室\n ");
+//        Scanner scanner = new Scanner(System.in);
+//        String next = scanner.next();
+//
+//        switch (next) {
+//            case "1":
+//                sendPrivateMessage(mRoleId, 1, "测试1", "hello 测试2");
+//                break;
+//            case "3":
+//                sendChannelMessage();
+//                break;
+//            case "4":
+//                sendCreateChatRoomMessage(1001L);
+//                break;
+//        }
     }
 
-    private static void sendCreateChatRoomMessage(long chatRoomId, long mRoleId) {
+    public static void sendCreateChatRoomMessage(long chatRoomId) {
         ChatData chatData = new ChatData();
         chatData.setId(mRoleId);
         chatData.setCharType(CharType.CREATE_CHAT_ROOM);
@@ -76,6 +72,16 @@ public class Test {
         chatData.setToID(toId);
         chatData.setName(name);
         chatData.setMessage(message);
+        mNettyClient.sendMessage(chatData);
+    }
+
+    public static void joinChatRoom() {
+        ChatData chatData = new ChatData();
+        chatData.setId(mRoleId);
+        chatData.setCharType(CharType.JOIN_CHAT_ROOM);
+        chatData.setToID(1000L);
+        chatData.setName("测试2");
+        chatData.setMessage("加入聊天室");
         mNettyClient.sendMessage(chatData);
     }
 

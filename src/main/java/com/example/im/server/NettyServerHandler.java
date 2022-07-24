@@ -6,16 +6,17 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
 public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
-
-
+    private static final Logger logger = LoggerFactory.getLogger(NettyServerHandler.class);
+    //  在线用户
     private static Map<Long, Channel> mUserMap = new ConcurrentHashMap();
 
     private static Map<Long, ArrayList<Long>> mChatRoom = new ConcurrentHashMap<>();
@@ -25,9 +26,8 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
         super.channelRegistered(ctx);
-        println("ID: " + ctx.channel().id() + "Name: " + ctx.name() + " ,-----上线了");
+        logger.info("ID: " + ctx.channel().id() + "Name: " + ctx.name() + " ,-----上线了");
     }
-
 
     /**
      * 服务端 接收到 客户端 发的数据
@@ -37,8 +37,7 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
      */
     @Override
     protected void channelRead0(ChannelHandlerContext context, Object obj) {
-//        System.out.println("服务端接收到客户端的消息：" + obj);
-
+        logger.info("服务端接收到客户端的消息：" + obj);
         // 解析客户端发送的数据
         ChatData chatData = mGson.fromJson(obj.toString(), ChatData.class);
 
@@ -58,6 +57,9 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
             case CREATE_CHAT_ROOM:
                 createChatRoom(chatData.getId(), chatData.getToID());
                 break;
+            case JOIN_CHAT_ROOM:
+                joinChatRoom(chatData.getId(), chatData.getToID());
+                break;
             default:
                 break;
         }
@@ -65,17 +67,17 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
 
 
     private void onLine(ChatData chatData, Channel channel) {
-        println("ID:" + chatData.getId() + " ---Name:" + chatData.getName() + "----上线");
+        logger.info("ID:" + chatData.getId() + " ---Name:" + chatData.getName() + "----上线");
         addUser(chatData.getId(), channel);
     }
 
     // ****************** 用户***********************/
     private void addUser(long id, Channel channel) {
-        println("id: " + id);
-        println("channel: " + channel.remoteAddress());
+        logger.info("id: " + id);
+        logger.info("channel: " + channel.remoteAddress());
         mUserMap.put(id, channel);
-        println(mUserMap.toString());
-        println(mUserMap.size() + "");
+        logger.info(mUserMap.toString());
+        logger.info(mUserMap.size() + "");
     }
 
     private Channel getUser(long id) {
@@ -83,6 +85,7 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     public void removeUser(ChannelId id) {
+        logger.info("删除用户: " + id);
         mUserMap.remove(id);
     }
 
@@ -94,9 +97,9 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
      * @param chatData 聊天Data
      */
     private void privateMessage(ChatData chatData) {
-        println(chatData.toString());
+        logger.info(chatData.toString());
         Channel user = getUser(chatData.getToID());
-        println(mUserMap.toString());
+        logger.info(mUserMap.toString());
         user.writeAndFlush(mGson.toJson(chatData));
     }
 
@@ -112,16 +115,17 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
      * @param chatRoomId 聊天室ID
      */
     public void createChatRoom(Long channelId, long chatRoomId) {
-        println("查询聊天室列表: " + mChatRoom.toString());
+        logger.info("查询聊天室列表: " + mChatRoom.toString());
         boolean isExist = mChatRoom.containsKey(chatRoomId);
-        println("创建的聊天室是否存在: " + isExist);
+        logger.info("创建的聊天室是否存在: " + isExist);
         if (isExist) {
-            println("聊天室已经存在");
+            logger.info("聊天室已经存在");
         } else {
             ArrayList<Long> chatRoomUserList = new ArrayList<>();
             mChatRoom.put(chatRoomId, chatRoomUserList);
-            println("创建聊天室成功");
-            println("mChatRoom: " + mChatRoom.toString());
+            logger.info("创建聊天室成功L: " + chatRoomId);
+            logger.info("chatRoomUserList: " + chatRoomUserList.toString());
+            logger.info("mChatRoom: " + mChatRoom.toString());
         }
         joinChatRoom(channelId, chatRoomId);
     }
@@ -134,16 +138,20 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
      * @param chatRoomId
      */
     private void joinChatRoom(Long channelId, long chatRoomId) {
-        println("加入聊天室: channelId: " + channelId);
+        logger.info("加入聊天室: channelId: " + channelId);
+        logger.info("加入聊天室: chatRoomId: " + chatRoomId);
+        logger.info("查询聊天室: mChatRoom: " + mChatRoom.toString());
         ArrayList<Long> chatRoomList = mChatRoom.get(chatRoomId);
+        logger.info("查询聊天室: chatRoomList: " + chatRoomList.toString());
+
         if (chatRoomList == null) {
-            println("没有这个聊天室");
+            logger.info("没有这个聊天室");
         } else {
-            if (chatRoomList.contains(chatRoomId)) {
-                println("已经加入过聊天室了");
+            if (chatRoomList.contains(channelId)) {
+                logger.info("已经加入过聊天室了");
             } else {
                 chatRoomList.add(channelId);
-                println("这个聊天室的人列表:" + chatRoomList.toString());
+                logger.info("这个聊天室的人列表:" + chatRoomList.toString());
             }
 
         }
@@ -158,8 +166,15 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
      */
     private void chatRoomMessage(ChatData chatData) {
         long toID = chatData.getToID();
+        logger.info("chatRoomMessage toID: " + toID);
         ArrayList<Long> channels = mChatRoom.get(toID);
+        logger.info("chatRoomMessage channels: " + channels.toString());
+        if (channels.size() == 0) {
+            logger.info("聊天室没有人");
+            return;
+        }
         for (Long channelId : channels) {
+            logger.info("聊天室人: " + channelId);
             getUser(channelId).writeAndFlush(chatData.getMessage());
         }
     }
@@ -173,14 +188,14 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
     private void quitRoomMessage(Long channelId, long chatRoomId) {
         ArrayList<Long> chatRoomList = mChatRoom.get(chatRoomId);
         if (chatRoomList == null) {
-            println("没有这个群");
+            logger.info("没有这个群");
             return;
         }
         if (chatRoomList.contains(channelId)) {
             chatRoomList.remove(channelId);
-            println("退出聊天室成功");
+            logger.info("退出聊天室成功");
         } else {
-            println("没有加入该聊天室");
+            logger.info("没有加入该聊天室");
         }
     }
 
@@ -199,7 +214,7 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
         super.channelUnregistered(ctx);
-        System.out.println(ctx.channel().id() + "下线了");
+        logger.info(ctx.channel().id() + "下线了");
         removeUser(ctx.channel().id());
     }
 
@@ -210,10 +225,6 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
 
     public void addGroup(long groupId, Channel channel) {
 //        Channel channel1 = mGroupMap.get(groupId);
-    }
-
-    private static void println(String message) {
-        System.out.println(message);
     }
 
 }
