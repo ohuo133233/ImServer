@@ -73,15 +73,18 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
 
     // ****************** 用户***********************/
     private void addUser(long id, Channel channel) {
-        logger.info("id: " + id);
-        logger.info("channel: " + channel.remoteAddress());
+        logger.info("addUser id: " + id);
+        logger.info("addUser channel: " + channel.remoteAddress());
         mUserMap.put(id, channel);
-        logger.info(mUserMap.toString());
-        logger.info(mUserMap.size() + "");
+        logger.info("addUser: " + mUserMap.toString());
+        logger.info("addUser: " + mUserMap.size() + "");
     }
 
     private Channel getUser(long id) {
-        return mUserMap.get(id);
+        logger.info("getUser ID: " + id);
+        logger.info("mUserMap : " + mUserMap.toString());
+        Channel channel = mUserMap.get(id);
+        return channel;
     }
 
     public void removeUser(ChannelId id) {
@@ -153,7 +156,6 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
                 chatRoomList.add(channelId);
                 logger.info("这个聊天室的人列表:" + chatRoomList.toString());
             }
-
         }
 
     }
@@ -174,8 +176,9 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
             return;
         }
         for (Long channelId : channels) {
-            logger.info("聊天室人: " + channelId);
-            getUser(channelId).writeAndFlush(chatData.getMessage());
+            logger.info("聊天室用户ID: " + channelId);
+            logger.info("转发内容: " + chatData);
+            getUser(channelId).writeAndFlush(mGson.toJson(chatData));
         }
     }
 
